@@ -41,17 +41,27 @@ class UpdateMentionsMetadataWhenVisible
      */
     public function handle($event)
     {
-        $content = $event->post->parsedContent;
-
         $this->syncUserMentions(
             $event->post,
-            Utils::getAttributeValues($content, 'USERMENTION', 'id')
+            $this->mentionValue($event, 'users')
         );
 
         $this->syncPostMentions(
             $event->post,
-            Utils::getAttributeValues($content, 'POSTMENTION', 'id')
+            $this->mentionValue($event, 'posts')
         );
+    }
+
+    protected function mentionValue($event, string $type)
+    {
+        $content = $event->post->parsedContent;
+        $tag = $type === 'users' ? 'USERMENTION' : 'POSTMENTION';
+
+        if ($event->actor->can("mention.$type", $event->post->discussion)) {
+            return Utils::getAttributeValues($content, $tag, 'id');
+        }
+
+        return [];
     }
 
     protected function syncUserMentions(Post $post, array $mentioned)
